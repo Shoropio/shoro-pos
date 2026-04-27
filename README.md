@@ -47,9 +47,29 @@ npm install
 npm run dev
 ```
 
-### Url y Login
-Url: http://127.0.0.1:5173/ 
-login: admin@shoropos.local/admin123
+### Acceso al Sistema
+- **URL Frontend**: [http://127.0.0.1:5173/](http://127.0.0.1:5173/)
+- **Credenciales Admin**: 
+    - **Usuario**: `admin@shoropos.local`
+    - **Contraseña**: `admin123`
+- **Credenciales Cajero (Sugerido)**: 
+    - **Usuario**: `cajero@shoropos.local`
+    - **Contraseña**: `cajero123`
+
+## Documentación de la API
+
+El sistema cuenta con una documentación interactiva completa basada en Swagger UI.
+
+- **URL de Documentación**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Redoc**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
+
+## Funcionalidades Avanzadas (Enterprise)
+
+- **Gestión de Turnos**: Apertura y cierre de caja con arqueo detallado.
+- **Facturación Electrónica Pro**: Integración directa con Hacienda CR y visualización de estados XML.
+- **Reportes Inteligentes**: Análisis de IVA, utilidad por producto y exportación de datos.
+- **Control de Roles**: Permisos granulares para cajeros, supervisores y administradores.
+- **Soporte Multimedia**: Catálogo con imágenes de productos para una venta más visual.
 
 ---
 © 2026 Shoropio Corporation. Todos los derechos reservados.

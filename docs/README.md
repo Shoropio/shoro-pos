@@ -7,6 +7,12 @@ Shoro POS es un punto de venta moderno para pequenos y medianos negocios en Cost
 - Login con JWT.
 - CRUD inicial de productos y clientes.
 - Punto de venta con busqueda, carrito, IVA, cobro y registro de venta.
+- Multimoneda CRC/USD con endpoint de tipo de cambio BCCR y fallback configurable.
+- Motor de promociones para reglas 3x2 y descuentos porcentuales programables.
+- Fidelizacion con puntos por compra y redencion en ventas.
+- Importacion masiva de productos desde Excel.
+- Modo offline PWA con cola local de ventas y sincronizacion al reconectar.
+- Permisos granulares por rol para descuentos, descuentos altos, importacion y acciones sensibles de caja.
 - Inventario con salidas automaticas por venta y movimientos manuales.
 - Dashboard con ventas del dia, ganancia estimada, productos mas vendidos e inventario bajo.
 - Historial de ventas y ticket de texto basico.
@@ -65,5 +71,7 @@ Nota: PyWebView puede depender de `pythonnet` en Windows. Si usa Python 3.14 y e
 ## Variables de entorno
 
 No se guardan credenciales en codigo. Copie `.env.example` a `.env` y configure llaves, SMTP y credenciales de Hacienda cuando active la integracion fiscal.
+
+Para tipo de cambio automatico BCCR configure `bccr_email` y `bccr_token` desde Ajustes. Si no estan configurados, Shoro POS usa la tasa fallback del negocio para no bloquear ventas.
 
 SQLite es el valor por defecto para operacion local. Para PostgreSQL use `DATABASE_URL=postgresql+psycopg://usuario:clave@host:5432/db` e instale el driver correspondiente.
