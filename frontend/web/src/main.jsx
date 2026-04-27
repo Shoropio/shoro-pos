@@ -66,6 +66,17 @@ function Login({ onLogin }) {
 }
 
 function Shell({ children, page, setPage, onLogout }) {
+  const [online, setOnline] = useState(navigator.onLine)
+  const role = localStorage.getItem('role') || 'sin rol'
+  useEffect(() => {
+    const update = () => setOnline(navigator.onLine)
+    window.addEventListener('online', update)
+    window.addEventListener('offline', update)
+    return () => {
+      window.removeEventListener('online', update)
+      window.removeEventListener('offline', update)
+    }
+  }, [])
   const nav = [
     ['dashboard', LayoutDashboard, 'Dashboard'],
     ['pos', ShoppingCart, 'Punto de Venta'],
@@ -83,13 +94,25 @@ function Shell({ children, page, setPage, onLogout }) {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand"><span className="brand-mark">S</span><strong>Shoro POS</strong></div>
-        <nav>{nav.map(([id, Icon, label]) => <button key={id} className={page === id ? 'active' : ''} onClick={() => setPage(id)}><Icon size={18} />{label}</button>)}</nav>
+        <nav>{nav.map(([id, Icon, label]) => <button key={id} className={page === id ? 'active' : ''} onClick={() => setPage(id)}><Icon size={20} /><span>{label}</span></button>)}</nav>
         <div className="sidebar-bottom">
-          <button className="btn-ghost sidebar-exit" onClick={onLogout}><LogOut size={18} />Cerrar sesion</button>
+          <button className="btn-ghost sidebar-exit" onClick={onLogout}><LogOut size={20} /><span>Cerrar sesión</span></button>
           <div className="footer">© 2026 Shoropio Corporation.<br />Todos los derechos reservados.</div>
         </div>
       </aside>
-      <main className="content">{children}</main>
+      <main className="content">
+        <div className="workspace-topbar">
+          <div>
+            <span className="eyebrow">Shoro POS Cloud Desk</span>
+            <strong>Operacion en tiempo real</strong>
+          </div>
+          <div className="topbar-actions">
+            <span className={online ? 'status-pill online' : 'status-pill offline'}>{online ? 'Online' : 'Offline'}</span>
+            <span className="role-pill">{role}</span>
+          </div>
+        </div>
+        {children}
+      </main>
     </div>
   )
 }
@@ -215,6 +238,7 @@ function POS() {
             <button className="btn btn-secondary" onClick={() => { setCart([]); setGlobalDiscount(0); setReceivedAmount('') }}>Limpiar</button>
           </div>
           <div className="product-grid">
+            {!filtered.length && <div className="empty-card"><Search size={22} /><strong>Sin productos</strong><span>Escanea otro codigo o prueba por nombre, SKU o codigo interno.</span></div>}
             {filtered.slice(0, 20).map((product) => (
               <button key={product.id} className="product-tile" onClick={() => add(product)}>
                 <div className="product-tile-img">{product.image_url ? <img src={product.image_url} alt={product.name} /> : product.name[0]}</div>
@@ -231,6 +255,7 @@ function POS() {
           <h2>Carrito</h2>
           <label>Cliente<select value={customerId} onChange={(e) => setCustomerId(e.target.value)}><option value="">Venta rapida</option>{customers.map((c) => <option key={c.id} value={c.id}>{c.name} · {c.points_balance || 0} pts</option>)}</select></label>
           <div className="cart-items">
+            {!cart.length && <div className="cart-empty"><ShoppingCart size={24} /><strong>Carrito vacio</strong><span>Escanea o selecciona productos para iniciar la venta.</span></div>}
             {cart.map((item) => (
               <div className="cart-item pro" key={item.id}>
                 <div><strong>{item.name}</strong><small>{money(item.sale_price)}</small></div>
@@ -256,7 +281,7 @@ function POS() {
             <label>Monto recibido<input type="number" value={receivedAmount} onChange={(e) => setReceivedAmount(e.target.value)} placeholder={paymentCurrency === 'USD' ? money(totals.total / exchangeRate, 'USD') : money(totals.total)} /></label>
           </div>
           <div className="total-row"><span>Cambio</span><strong>{money(change)}</strong></div>
-          <button className="btn btn-primary btn-large" onClick={() => charge()}>Cobrar</button>
+          <button className="btn btn-primary btn-large" disabled={!cart.length} onClick={() => charge()}>Cobrar</button>
           <div className="payment-grid">
             <button className="btn btn-secondary" onClick={() => window.print()}>Imprimir</button>
             <button className="btn btn-secondary" onClick={() => charge('tiquete_electronico')}>Tiquete</button>
@@ -483,12 +508,14 @@ function CrudPage({ title, items, form, setForm, save, fields, labels, render })
 function Header({ title, subtitle }) {
   const { toggleTheme } = useTheme()
   return (
-    <header className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <header className="page-header">
       <div>
         <h1>{title}</h1>
         <p>{subtitle}</p>
       </div>
-      <button className="btn-ghost" onClick={toggleTheme} aria-label="Cambiar tema">🌓</button>
+      <button className="btn-ghost theme-toggle" onClick={toggleTheme} aria-label="Cambiar tema">
+        <div className="theme-toggle-icon">🌓</div>
+      </button>
     </header>
   )
 }
