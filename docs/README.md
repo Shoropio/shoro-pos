@@ -42,6 +42,26 @@ npm run dev
 Frontend: `http://localhost:5173`  
 API: `http://localhost:8000/docs`
 
+## Produccion y QA
+
+```powershell
+pytest -q
+cd frontend\web
+npm run build
+```
+
+Para Docker:
+
+```powershell
+docker compose up --build
+```
+
+Para migraciones:
+
+```powershell
+alembic upgrade head
+```
+
 Usuario demo:
 
 - Correo: `admin@shoropos.local`

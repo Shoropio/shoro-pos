@@ -168,6 +168,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); 
   gap: 20px; 
 }
+.metric-grid.compact { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 
 .metric {
   display: flex;

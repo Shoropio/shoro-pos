@@ -72,6 +72,7 @@ function Shell({ children, page, setPage, onLogout }) {
     ['sales', Receipt, 'Ventas'],
     ['inventory', Boxes, 'Inventario'],
     ['reports', BarChart3, 'Reportes'],
+    ['users', UserRound, 'Usuarios'],
     ['settings', Settings, 'Configuracion']
   ]
   return (
@@ -378,8 +379,90 @@ function Inventory() {
   return <><Header title="Inventario" subtitle="Entradas, salidas y ajustes." /><section className="split"><Panel title="Movimiento"><form className="form-stack" onSubmit={save}><label>Producto<select value={form.product_id} onChange={(e) => setForm({ ...form, product_id: e.target.value })}><option value="">Seleccione...</option>{products.map((p) => <option key={p.id} value={p.id}>{p.name} · {p.stock}</option>)}</select></label><label>Tipo<select value={form.movement_type} onChange={(e) => setForm({ ...form, movement_type: e.target.value })}><option value="entrada">Entrada</option><option value="salida">Salida</option><option value="ajuste_positivo">Ajuste +</option><option value="ajuste_negativo">Ajuste -</option></select></label><label>Cantidad<input type="number" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} /></label><label>Motivo<input value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} /></label><button className="btn btn-primary">Registrar</button></form></Panel><Panel title="Historial">{movements.map((m) => <Row key={m.id} left={m.reason} middle={m.movement_type} right={m.quantity} />)}</Panel></section></>
 }
 
-function Arqueo() { return <><Header title="Arqueo de Caja" subtitle="Apertura, cierre y control de efectivo." /><Panel title="Caja">Modulo preparado para cierres e impresion de cierre.</Panel></> }
+function Arqueo() {
+  const [shift, setShift] = useState(null)
+  const [openingBalance, setOpeningBalance] = useState('')
+  const [closingBalance, setClosingBalance] = useState('')
+  const [notes, setNotes] = useState('')
+  const [message, setMessage] = useState('')
+  useEffect(() => { api('/cash-shifts/current').then(setShift) }, [])
+  async function openShift() {
+    setShift(await api('/cash-shifts/open', { method: 'POST', body: { opening_balance: Number(openingBalance || 0) } }))
+    setOpeningBalance('')
+  }
+  async function closeShift() {
+    const closed = await api('/cash-shifts/close', { method: 'POST', body: { closing_balance: Number(closingBalance || 0), notes } })
+    setMessage(`Turno cerrado. Esperado ${money(closed.expected_balance)} / real ${money(closed.closing_balance)}`)
+    setShift(null)
+    setClosingBalance('')
+    setNotes('')
+  }
+  return (
+    <>
+      <Header title="Arqueo de Caja" subtitle="Apertura, cierre, diferencia e impresion del corte diario." />
+      {message && <div className="notice">{message}</div>}
+      {!shift ? (
+        <Panel title="Abrir caja"><div className="form-stack"><label>Fondo inicial<input type="number" value={openingBalance} onChange={(e) => setOpeningBalance(e.target.value)} /></label><button className="btn btn-primary" onClick={openShift}>Abrir turno</button></div></Panel>
+      ) : (
+        <section className="split">
+          <Panel title="Turno abierto">
+            <section className="metric-grid compact">
+              <Metric label="Apertura" value={money(shift.opening_balance)} />
+              <Metric label="Efectivo" value={money(shift.cash_sales)} />
+              <Metric label="Tarjeta" value={money(shift.card_sales)} />
+              <Metric label="SINPE" value={money(shift.sinpe_sales)} />
+              <Metric label="Esperado" value={money(shift.expected_balance)} />
+            </section>
+            <button className="btn btn-secondary" onClick={() => window.print()}>Imprimir cierre</button>
+          </Panel>
+          <Panel title="Cerrar caja"><div className="form-stack"><label>Monto real<input type="number" value={closingBalance} onChange={(e) => setClosingBalance(e.target.value)} /></label><label>Notas<input value={notes} onChange={(e) => setNotes(e.target.value)} /></label><button className="btn btn-primary" onClick={closeShift}>Cerrar turno</button></div></Panel>
+        </section>
+      )}
+    </>
+  )
+}
 function Reports() { return <Dashboard /> }
+
+function Users() {
+  const [users, setUsers] = useState([])
+  const [roles, setRoles] = useState([])
+  const [userForm, setUserForm] = useState({ full_name: '', email: '', password: '', role_id: '' })
+  const [roleForm, setRoleForm] = useState({ name: '', permissions: '{"sales.create": true}' })
+  const [error, setError] = useState('')
+  useEffect(() => { load() }, [])
+  async function load() {
+    try {
+      const [userData, roleData] = await Promise.all([api('/users'), api('/users/roles')])
+      setUsers(userData)
+      setRoles(roleData)
+    } catch {
+      setError('Este usuario no tiene permiso para administrar usuarios.')
+    }
+  }
+  async function saveUser(event) {
+    event.preventDefault()
+    await api('/users', { method: 'POST', body: { ...userForm, role_id: userForm.role_id ? Number(userForm.role_id) : null } })
+    setUserForm({ full_name: '', email: '', password: '', role_id: '' })
+    load()
+  }
+  async function saveRole(event) {
+    event.preventDefault()
+    await api('/users/roles', { method: 'POST', body: { name: roleForm.name, permissions: JSON.parse(roleForm.permissions || '{}') } })
+    setRoleForm({ name: '', permissions: '{"sales.create": true}' })
+    load()
+  }
+  return (
+    <>
+      <Header title="Usuarios y Permisos" subtitle="Roles granulares para descuentos, importaciones y acciones sensibles." />
+      {error && <div className="notice warning">{error}</div>}
+      <section className="split">
+        <Panel title="Nuevo usuario"><form className="form-stack" onSubmit={saveUser}><label>Nombre<input value={userForm.full_name} onChange={(e) => setUserForm({ ...userForm, full_name: e.target.value })} /></label><label>Correo<input value={userForm.email} onChange={(e) => setUserForm({ ...userForm, email: e.target.value })} /></label><label>Contrasena<input type="password" value={userForm.password} onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} /></label><label>Rol<select value={userForm.role_id} onChange={(e) => setUserForm({ ...userForm, role_id: e.target.value })}><option value="">Sin rol</option>{roles.map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}</select></label><button className="btn btn-primary">Crear usuario</button></form></Panel>
+        <Panel title="Nuevo rol"><form className="form-stack" onSubmit={saveRole}><label>Nombre<input value={roleForm.name} onChange={(e) => setRoleForm({ ...roleForm, name: e.target.value })} /></label><label>Permisos JSON<textarea rows="8" value={roleForm.permissions} onChange={(e) => setRoleForm({ ...roleForm, permissions: e.target.value })} /></label><button className="btn btn-primary">Crear rol</button></form></Panel>
+      </section>
+      <Panel title="Usuarios">{users.map((user) => <Row key={user.id} left={user.full_name} middle={user.role || 'Sin rol'} right={user.email} />)}</Panel>
+    </>
+  )
+}
 
 function SettingsPage() {
   const [settings, setSettings] = useState(null)
@@ -409,7 +492,7 @@ function App() {
     return () => window.removeEventListener('online', syncOfflineSales)
   }, [])
   if (!tokenReady) return <Login onLogin={() => setTokenReady(true)} />
-  const pages = { dashboard: <Dashboard />, pos: <POS />, arqueo: <Arqueo />, products: <Products />, promotions: <Promotions />, customers: <Customers />, sales: <Sales />, inventory: <Inventory />, reports: <Reports />, settings: <SettingsPage /> }
+  const pages = { dashboard: <Dashboard />, pos: <POS />, arqueo: <Arqueo />, products: <Products />, promotions: <Promotions />, customers: <Customers />, sales: <Sales />, inventory: <Inventory />, reports: <Reports />, users: <Users />, settings: <SettingsPage /> }
   return <Shell page={page} setPage={setPage} onLogout={() => { localStorage.removeItem('token'); localStorage.removeItem('permissions'); setTokenReady(false) }}>{pages[page]}</Shell>
 }
 

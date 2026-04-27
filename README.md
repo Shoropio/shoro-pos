@@ -63,6 +63,16 @@ El sistema cuenta con una documentación interactiva completa basada en Swagger 
 - **URL de Documentación**: [http://localhost:8000/docs](http://localhost:8000/docs)
 - **Redoc**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
 
+## Produccion
+
+- Health check: `GET /health`
+- Readiness check: `GET /ready`
+- Migraciones: `alembic upgrade head`
+- Tests backend: `pytest -q`
+- Build frontend: `npm run build`
+- Backup SQLite: `.\scripts\backup_sqlite.ps1`
+- Docker local: `docker compose up --build`
+
 ## Funcionalidades Avanzadas (Enterprise)
 
 - **Gestión de Turnos**: Apertura y cierre de caja con arqueo detallado.
