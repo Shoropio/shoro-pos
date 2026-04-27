@@ -27,4 +27,6 @@ class BusinessSettings(Base):
     dark_mode: Mapped[bool] = mapped_column(Boolean, default=False)
     fiscal_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     fiscal_environment: Mapped[str] = mapped_column(String(20), default="sandbox")
+    printer_name: Mapped[str | None] = mapped_column(String(120))
+    ticket_size: Mapped[str] = mapped_column(String(10), default="80mm")  # 58mm or 80mm
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

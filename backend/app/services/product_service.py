@@ -22,6 +22,8 @@ def list_products(db: Session, q: str | None = None) -> list[Product]:
 
 def create_product(db: Session, data: ProductCreate) -> Product:
     product = Product(**data.model_dump())
+    if not product.barcode and product.internal_code:
+        product.barcode = product.internal_code
     db.add(product)
     db.commit()
     db.refresh(product)
