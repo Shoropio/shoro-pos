@@ -1,6 +1,6 @@
-# Shoro POS - Sistema Profesional de Punto de Venta
+# ShoroPOS - Sistema Profesional de Punto de Venta
 
-Shoro POS es una solución robusta y moderna diseñada para la gestión comercial y facturación electrónica, optimizada para el mercado de Costa Rica.
+ShoroPOS es una solución robusta y moderna diseñada para la gestión comercial y facturación electrónica, optimizada para el mercado de Costa Rica.
 
 ## Características Principales
 
@@ -46,6 +46,10 @@ cd frontend/web
 npm install
 npm run dev
 ```
+
+### Url y Login
+Url: http://127.0.0.1:5173/ 
+login: admin@shoropos.local/admin123
 
 ---
 © 2026 Shoropio Corporation. Todos los derechos reservados.

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BarChart3, Boxes, CreditCard, LayoutDashboard, LogOut, Receipt, Search, Settings, ShoppingCart, UserRound } from 'lucide-react'
 import { api, setToken } from './services/api'
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
 import './styles/app.css'
 
 const money = (value) => new Intl.NumberFormat('es-CR', { style: 'currency', currency: 'CRC' }).format(Number(value || 0))
@@ -73,7 +74,153 @@ function Shell({ children, page, setPage, onLogout }) {
   )
 }
 
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
+function POS() {
+  const [products, setProducts] = useState([])
+  const [customers, setCustomers] = useState([])
+  const [search, setSearch] = useState('')
+  const [cart, setCart] = useState([])
+  const [customerId, setCustomerId] = useState('')
+  const [method, setMethod] = useState('cash')
+  const [receivedAmount, setReceivedAmount] = useState('')
+  const [globalDiscount, setGlobalDiscount] = useState(0)
+  const [message, setMessage] = useState('')
+  const searchRef = React.useRef(null)
+
+  useEffect(() => { 
+    refresh()
+    searchRef.current?.focus()
+  }, [])
+
+  async function refresh() {
+    setProducts(await api('/products'))
+    setCustomers(await api('/customers'))
+  }
+
+  const filtered = products.filter((p) => 
+    [p.name, p.internal_code, p.sku, p.barcode].join(' ').toLowerCase().includes(search.toLowerCase())
+  )
+
+  const totals = useMemo(() => {
+    const sub = cart.reduce((acc, item) => acc + (Number(item.sale_price) * item.qty), 0)
+    const disc = cart.reduce((acc, item) => acc + (Number(item.discount || 0) * item.qty), 0) + Number(globalDiscount)
+    const afterDisc = sub - disc
+    const tax = cart.reduce((acc, item) => {
+      const itemSub = Number(item.sale_price) * item.qty
+      const itemDisc = (Number(item.discount || 0) * item.qty) + (afterDisc > 0 ? (itemSub / sub * globalDiscount) : 0)
+      return acc + ((itemSub - itemDisc) * Number(item.tax_rate) / 100)
+    }, 0)
+    return { subtotal: sub, discount: disc, tax: tax, total: Math.max(0, afterDisc + tax) }
+  }, [cart, globalDiscount])
+
+  function add(product) {
+    setCart((current) => {
+      const found = current.find((item) => item.id === product.id)
+      if (found) return current.map((item) => item.id === product.id ? { ...item, qty: item.qty + 1 } : item)
+      return [...current, { ...product, qty: 1, discount: 0 }]
+    })
+    setSearch('')
+    searchRef.current?.focus()
+  }
+
+  function handleSearchKeyDown(e) {
+    if (e.key === 'Enter') {
+      if (filtered.length === 1) {
+        add(filtered[0])
+      }
+    }
+  }
+
+  async function charge(fiscalType = null) {
+    if (cart.length === 0) return
+    try {
+      const sale = await api('/sales', {
+        method: 'POST',
+        body: {
+          customer_id: customerId ? Number(customerId) : null,
+          items: cart.map((item) => ({ 
+            product_id: item.id, 
+            quantity: item.qty, 
+            discount: Number(item.discount || 0) + (Number(globalDiscount) / cart.length)
+          })),
+          payments: [{ method, amount: totals.total }],
+          fiscal_document_type: fiscalType
+        }
+      })
+      setCart([])
+      setGlobalDiscount(0)
+      setReceivedAmount('')
+      setMessage(`Venta ${sale.sale_number} exitosa: ${money(sale.total)}`)
+      refresh()
+    } catch (err) {
+      setMessage('Error al procesar la venta')
+    }
+  }
+
+  const change = Number(receivedAmount) > totals.total ? Number(receivedAmount) - totals.total : 0
+
+  return (
+    <>
+      <Header title="Punto de Venta" subtitle="Escanea productos o busca manualmente para facturar." />
+      <section className="pos-grid">
+        <div className="catalog">
+          <div className="search-section">
+            <div className="search-input-wrapper">
+              <Search className="search-icon" size={20} />
+              <input 
+                ref={searchRef}
+                placeholder="Escanea código de barras o busca por nombre/SKU..." 
+                value={search} 
+                onChange={(e) => setSearch(e.target.value)} 
+                onKeyDown={handleSearchKeyDown}
+              />
+            </div>
+            <button className="btn btn-secondary" onClick={() => { setCart([]); setGlobalDiscount(0); setReceivedAmount(''); setMessage(''); }}>Limpiar</button>
+          </div>
+          {message && <div className="notice" style={{ marginBottom: '20px' }}>{message}</div>}
+          <div className="product-grid">
+            {filtered.slice(0, 15).map((product) => (
+              <button key={product.id} className="product-tile" onClick={() => add(product)}>
+                <div className="product-tile-img">{product.name[0]}</div>
+                <div className="product-tile-info">
+                  <h3>{product.name}</h3>
+                  <div className="price">{money(product.sale_price)}</div>
+                  <small>Stock: {product.stock}</small>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+        <aside className="cart">
+          <h2 style={{ color: 'var(--text-bright)' }}>Carrito</h2>
+          <label>Cliente
+            <select value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
+              <option value="">Venta Rápida</option>
+              {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </label>
+          <div className="cart-items">
+            {cart.map((item) => (
+              <div className="cart-item" key={item.id}>
+                <div><strong>{item.name}</strong><br/><small>{money(item.sale_price)}</small></div>
+                <input type="number" min="1" value={item.qty} onChange={(e) => setCart(cart.map((x) => x.id === item.id ? { ...x, qty: Number(e.target.value) } : x))} />
+                <button className="btn-ghost text-red" onClick={() => setCart(cart.filter(x => x.id !== item.id))}>×</button>
+              </div>
+            ))}
+          </div>
+          <div className="cart-totals">
+            <div className="total-row"><span>Subtotal</span><span>{money(totals.subtotal)}</span></div>
+            <div className="total-row"><span>IVA</span><span>{money(totals.tax)}</span></div>
+            <div className="total-row grand-total"><span>TOTAL</span><span>{money(totals.total)}</span></div>
+          </div>
+          <select value={method} onChange={(e) => setMethod(e.target.value)}>
+            <option value="cash">Efectivo</option><option value="card">Tarjeta</option><option value="sinpe">SINPE</option>
+          </select>
+          <button className="btn btn-primary btn-large" onClick={() => charge()}>COBRAR</button>
+        </aside>
+      </section>
+    </>
+  )
+}
 
 function Dashboard() {
   const [data, setData] = useState(null)
