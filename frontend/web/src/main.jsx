@@ -4,6 +4,10 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { BarChart3, Boxes, CreditCard, LayoutDashboard, LogOut, Receipt, Search, Settings, ShoppingCart, Tags, Upload, UserRound, WifiOff, X } from 'lucide-react'
 import { api, API_URL, setToken } from './services/api'
 import './styles/app.css'
+import './styles/global.css'
+import { ThemeProvider, useTheme } from './contexts/ThemeContext'
+import { Input } from './components/Input'
+import { Button } from './components/Button'
 
 const pendingKey = 'shoro_pending_sales'
 const money = (value, currency = 'CRC') => new Intl.NumberFormat('es-CR', { style: 'currency', currency }).format(Number(value || 0))
@@ -51,10 +55,10 @@ function Login({ onLogin }) {
           <p>Sistema profesional de punto de venta</p>
         </div>
         <form onSubmit={submit} className="form-stack">
-          <label>Correo<input value={email} onChange={(e) => setEmail(e.target.value)} /></label>
-          <label>Contrasena<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} /></label>
+          <label>Correo< Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@shoropos.local" /> </label>
+          <label>Contrasena< Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" /> </label>
           {error && <p className="text-red center">{error}</p>}
-          <button className="btn btn-primary btn-large">Iniciar sesion</button>
+          <Button className="btn-primary btn-large" type="submit">Iniciar sesión</Button>
         </form>
       </section>
     </main>
@@ -476,7 +480,18 @@ function SettingsPage() {
 function CrudPage({ title, items, form, setForm, save, fields, labels, render }) {
   return <><Header title={title} subtitle="Gestion profesional de registros." /><section className="split"><Panel title={`Nuevo ${title.toLowerCase()}`}><form onSubmit={save} className="form-grid">{fields.map((field) => <label key={field}>{labels[field] || field}<input type={field.includes('price') || field.includes('stock') || field.includes('rate') ? 'number' : 'text'} value={form[field] ?? ''} onChange={(e) => setForm({ ...form, [field]: e.target.value })} /></label>)}<button className="btn btn-primary">Guardar</button></form></Panel><Panel title="Registros">{items.map((item) => <div key={item.id}>{render(item)}</div>)}</Panel></section></>
 }
-function Header({ title, subtitle }) { return <header className="page-header"><div><h1>{title}</h1><p>{subtitle}</p></div></header> }
+function Header({ title, subtitle }) {
+  const { toggleTheme } = useTheme()
+  return (
+    <header className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div>
+        <h1>{title}</h1>
+        <p>{subtitle}</p>
+      </div>
+      <button className="btn-ghost" onClick={toggleTheme} aria-label="Cambiar tema">🌓</button>
+    </header>
+  )
+}
 function Metric({ label, value }) { return <article className="metric"><span>{label}</span><strong>{value}</strong></article> }
 function Panel({ title, children }) { return <section className="panel"><h2>{title}</h2>{children}</section> }
 function Row({ left, middle, right }) { return <div className="row"><span>{left}</span>{middle && <small>{middle}</small>}<b>{right}</b></div> }
@@ -496,4 +511,8 @@ function App() {
   return <Shell page={page} setPage={setPage} onLogout={() => { localStorage.removeItem('token'); localStorage.removeItem('permissions'); setTokenReady(false) }}>{pages[page]}</Shell>
 }
 
-createRoot(document.getElementById('root')).render(<App />)
+createRoot(document.getElementById('root')).render(
+  <ThemeProvider>
+    <App />
+  </ThemeProvider>
+)

@@ -1,0 +1,8 @@
+@import './design-system.css';
+
+/* Global baseline tweaks for UI polish */
+body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; }
+.login-shell { display:flex; align-items:center; justify-content:center; height:100vh; }
+.login-card { background: var(--ds-surface); padding: 2rem; border-radius: 8px; box-shadow: var(--shadow, 0 2px 8px rgba(0,0,0,.1)); }
+.form-stack { display:flex; flex-direction:column; gap: 0.75rem; }
+.brand-mark { display:inline-block; width: 28px; height: 28px; border-radius: 6px; background: var(--ds-primary); color: #fff; text-align:center; line-height:28px; font-weight:700; }
