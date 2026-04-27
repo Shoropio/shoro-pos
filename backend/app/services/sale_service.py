@@ -10,8 +10,11 @@ from app.models.payment import Payment
 from app.models.product import Product
 from app.models.sale import Sale
 from app.models.sale_item import SaleItem
+from app.models.customer import Customer
+from app.models.settings import BusinessSettings
 from app.schemas.sale_schema import SaleCreate
 from app.services.inventory_service import register_movement
+from app.services.promotion_service import promotion_discount_for_line
 
 
 TWOPLACES = Decimal("0.01")
@@ -32,7 +35,13 @@ def create_sale(db: Session, data: SaleCreate, user_id: int | None) -> Sale:
     if not data.items:
         raise HTTPException(status_code=400, detail="La venta debe incluir productos")
 
-    sale = Sale(sale_number=next_sale_number(db), customer_id=data.customer_id, user_id=user_id, currency=data.currency)
+    sale = Sale(
+        sale_number=next_sale_number(db),
+        customer_id=data.customer_id,
+        user_id=user_id,
+        currency=data.currency,
+        exchange_rate=data.exchange_rate,
+    )
     db.add(sale)
     db.flush()
 
@@ -48,7 +57,9 @@ def create_sale(db: Session, data: SaleCreate, user_id: int | None) -> Sale:
             raise HTTPException(status_code=400, detail=f"Stock insuficiente para {product.name}")
 
         line_subtotal = money(product.sale_price * item_in.quantity)
-        taxable_base = max(Decimal("0"), line_subtotal - item_in.discount_amount)
+        promo_discount = money(promotion_discount_for_line(db, product, item_in.quantity, line_subtotal))
+        line_discount = money(item_in.discount_amount + promo_discount)
+        taxable_base = max(Decimal("0"), line_subtotal - line_discount)
         tax_amount = money(taxable_base * product.tax_rate / Decimal("100"))
         line_total = money(taxable_base + tax_amount)
 
@@ -59,7 +70,7 @@ def create_sale(db: Session, data: SaleCreate, user_id: int | None) -> Sale:
             cabys_code=product.cabys_code,
             quantity=item_in.quantity,
             unit_price=product.sale_price,
-            discount_amount=item_in.discount_amount,
+            discount_amount=line_discount,
             tax_rate=product.tax_rate,
             tax_amount=tax_amount,
             line_total=line_total,
@@ -67,21 +78,43 @@ def create_sale(db: Session, data: SaleCreate, user_id: int | None) -> Sale:
         db.add(sale_item)
         register_movement(db, product, "venta", item_in.quantity, "Venta POS", user_id=user_id, reference=sale.sale_number)
         subtotal += line_subtotal
-        discount_total += item_in.discount_amount
+        discount_total += line_discount
         tax_total += tax_amount
 
+    settings = db.scalar(select(BusinessSettings).limit(1)) or BusinessSettings()
+    point_value = Decimal(settings.loyalty_crc_per_point or 1000)
+    customer = db.get(Customer, data.customer_id) if data.customer_id else None
+    redeemable = max(0, int(data.points_to_redeem or 0))
+    if customer:
+        redeemable = min(redeemable, customer.points_balance)
+    points_discount = money(Decimal(redeemable) * point_value)
+    if points_discount > 0:
+        discount_total += min(points_discount, subtotal - discount_total)
+
     total = money(subtotal - discount_total + tax_total)
-    paid = sum((payment.amount for payment in data.payments), Decimal("0"))
-    if paid < total:
+    total_crc = money(total * data.exchange_rate) if data.currency == "USD" else total
+    paid_crc = sum((money(payment.amount * payment.exchange_rate) if payment.currency == "USD" else money(payment.amount) for payment in data.payments), Decimal("0"))
+    if paid_crc < total_crc:
         raise HTTPException(status_code=400, detail="El pago no cubre el total de la venta")
 
     for payment_in in data.payments:
-        db.add(Payment(sale_id=sale.id, **payment_in.model_dump()))
+        amount_crc = money(payment_in.amount * payment_in.exchange_rate) if payment_in.currency == "USD" else money(payment_in.amount)
+        db.add(Payment(sale_id=sale.id, amount_crc=amount_crc, **payment_in.model_dump()))
 
     sale.subtotal = money(subtotal)
     sale.discount_total = money(discount_total)
     sale.tax_total = money(tax_total)
     sale.total = total
+    sale.total_crc = total_crc
+    sale.paid_total_crc = money(paid_crc)
+    sale.change_amount_crc = money(max(Decimal("0"), paid_crc - total_crc))
+    sale.points_redeemed = redeemable
+    if customer:
+        customer.points_balance -= redeemable
+        earned = int(total_crc // point_value)
+        customer.points_balance += earned
+        customer.lifetime_points += earned
+        sale.points_earned = earned
     sale.ticket_text = build_ticket(sale)
     if data.fiscal_document_type:
         sale.fiscal_status = "pendiente"

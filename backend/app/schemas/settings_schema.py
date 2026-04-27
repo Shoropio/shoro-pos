@@ -20,6 +20,10 @@ class BusinessSettingsRead(BaseModel):
     theme: str
     fiscal_enabled: bool
     fiscal_environment: str
+    bccr_email: str | None = None
+    bccr_token: str | None = None
+    fallback_usd_crc_rate: str | None = None
+    loyalty_crc_per_point: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -40,6 +44,10 @@ class BusinessSettingsUpdate(BaseModel):
     theme: str | None = None
     fiscal_enabled: bool | None = None
     fiscal_environment: str | None = None
+    bccr_email: str | None = None
+    bccr_token: str | None = None
+    fallback_usd_crc_rate: str | None = None
+    loyalty_crc_per_point: str | None = None
 
 
 BusinessSettingsOut = BusinessSettingsRead

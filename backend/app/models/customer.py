@@ -18,6 +18,8 @@ class Customer(Base):
     phone: Mapped[str | None] = mapped_column(String(40))
     address: Mapped[str | None] = mapped_column(Text)
     credit_limit: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0)
+    points_balance: Mapped[int] = mapped_column(Integer, default=0)
+    lifetime_points: Mapped[int] = mapped_column(Integer, default=0)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 

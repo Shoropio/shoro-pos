@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.models.product import Product
 from app.schemas.product_schema import ProductCreate, ProductUpdate
+from app.services.barcode_service import barcode_service
 
 
 def list_products(db: Session, q: str | None = None) -> list[Product]:
@@ -23,7 +24,7 @@ def list_products(db: Session, q: str | None = None) -> list[Product]:
 def create_product(db: Session, data: ProductCreate) -> Product:
     product = Product(**data.model_dump())
     if not product.barcode and product.internal_code:
-        product.barcode = product.internal_code
+        product.barcode = barcode_service.generate_internal_barcode(product.internal_code)
     db.add(product)
     db.commit()
     db.refresh(product)

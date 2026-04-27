@@ -15,6 +15,8 @@ class SaleItemCreate(BaseModel):
 class PaymentCreate(BaseModel):
     method: str
     amount: Decimal = Field(gt=0)
+    currency: str = "CRC"
+    exchange_rate: Decimal = 1
     reference: str | None = None
 
 
@@ -26,6 +28,7 @@ class SaleCreate(BaseModel):
     items: list[SaleItemCreate]
     payments: list[PaymentCreate]
     fiscal_document_type: str | None = None
+    points_to_redeem: int = 0
 
 
 class SaleItemRead(BaseModel):
@@ -47,6 +50,9 @@ class PaymentRead(BaseModel):
     id: int
     method: str
     amount: Decimal
+    currency: str = "CRC"
+    exchange_rate: Decimal = 1
+    amount_crc: Decimal = 0
     reference: str | None
 
     model_config = {"from_attributes": True}
@@ -61,6 +67,11 @@ class SaleRead(BaseModel):
     discount_total: Decimal
     tax_total: Decimal
     total: Decimal
+    total_crc: Decimal = 0
+    paid_total_crc: Decimal = 0
+    change_amount_crc: Decimal = 0
+    points_earned: int = 0
+    points_redeemed: int = 0
     payment_status: str
     fiscal_status: str
     status: str

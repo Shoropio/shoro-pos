@@ -4,11 +4,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.database import Base, SessionLocal, engine
 from app.models import *  # noqa: F401,F403
-from app.routes import auth_routes, customer_routes, fiscal_routes, inventory_routes, product_routes, report_routes, sale_routes, settings_routes
+from app.routes import auth_routes, cash_shift_routes, category_routes, customer_routes, exchange_routes, fiscal_routes, inventory_routes, product_routes, promotion_routes, report_routes, sale_routes, settings_routes, sync_routes
 from app.services.auth_service import ensure_default_admin
+from app.services.schema_service import ensure_sqlite_columns
 
 settings = get_settings()
 Base.metadata.create_all(bind=engine)
+ensure_sqlite_columns()
 with SessionLocal() as db:
     ensure_default_admin(db)
 
@@ -23,12 +25,17 @@ app.add_middleware(
 
 app.include_router(auth_routes.router)
 app.include_router(product_routes.router)
+app.include_router(category_routes.router)
 app.include_router(customer_routes.router)
+app.include_router(exchange_routes.router)
 app.include_router(sale_routes.router)
 app.include_router(inventory_routes.router)
+app.include_router(cash_shift_routes.router)
 app.include_router(report_routes.router)
+app.include_router(promotion_routes.router)
 app.include_router(fiscal_routes.router)
 app.include_router(settings_routes.router)
+app.include_router(sync_routes.router)
 
 
 @app.get("/")

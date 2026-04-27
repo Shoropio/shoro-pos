@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, File, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -8,23 +8,37 @@ from app.schemas.product_schema import ProductCreate, ProductOut, ProductUpdate
 from app.security import get_current_user
 from app.services.product_service import create_product, list_products, update_product
 from app.services.barcode_service import barcode_service
+from app.services.auth_service import require_permission
+from app.services.import_service import import_products_excel
 
 
-router = APIRouter(prefix="/products", tags=["products"], dependencies=[Depends(get_current_user)])
+router = APIRouter(prefix="/products", tags=["products"])
 
 
 @router.get("", response_model=list[ProductOut])
-def index(q: str | None = None, db: Session = Depends(get_db)) -> list[Product]:
+def index(q: str | None = None, db: Session = Depends(get_db), current_user=Depends(get_current_user)) -> list[Product]:
     return list_products(db, q)
 
 
 @router.post("", response_model=ProductOut, status_code=status.HTTP_201_CREATED)
-def create(data: ProductCreate, db: Session = Depends(get_db)) -> Product:
+def create(data: ProductCreate, db: Session = Depends(get_db), current_user=Depends(get_current_user)) -> Product:
     return create_product(db, data)
 
 
+@router.post("/import")
+async def import_excel(file: UploadFile = File(...), db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    require_permission(current_user, "products.import")
+    if not file.filename.lower().endswith((".xlsx", ".xlsm")):
+        raise HTTPException(status_code=400, detail="Suba un archivo Excel .xlsx")
+    content = await file.read()
+    try:
+        return import_products_excel(db, content)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
 @router.get("/{product_id}", response_model=ProductOut)
-def show(product_id: int, db: Session = Depends(get_db)) -> Product:
+def show(product_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)) -> Product:
     product = db.get(Product, product_id)
     if product is None:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
@@ -32,7 +46,7 @@ def show(product_id: int, db: Session = Depends(get_db)) -> Product:
 
 
 @router.put("/{product_id}", response_model=ProductOut)
-def update(product_id: int, data: ProductUpdate, db: Session = Depends(get_db)) -> Product:
+def update(product_id: int, data: ProductUpdate, db: Session = Depends(get_db), current_user=Depends(get_current_user)) -> Product:
     product = db.get(Product, product_id)
     if product is None:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
@@ -40,7 +54,7 @@ def update(product_id: int, data: ProductUpdate, db: Session = Depends(get_db)) 
 
 
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete(product_id: int, db: Session = Depends(get_db)) -> Response:
+def delete(product_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)) -> Response:
     product = db.get(Product, product_id)
     if product is None:
         raise HTTPException(status_code=404, detail="Producto no encontrado")

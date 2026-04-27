@@ -29,4 +29,8 @@ class BusinessSettings(Base):
     fiscal_environment: Mapped[str] = mapped_column(String(20), default="sandbox")
     printer_name: Mapped[str | None] = mapped_column(String(120))
     ticket_size: Mapped[str] = mapped_column(String(10), default="80mm")  # 58mm or 80mm
+    bccr_email: Mapped[str | None] = mapped_column(String(160))
+    bccr_token: Mapped[str | None] = mapped_column(String(120))
+    fallback_usd_crc_rate: Mapped[Decimal] = mapped_column(Numeric(12, 4), default=520)
+    loyalty_crc_per_point: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=1000)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

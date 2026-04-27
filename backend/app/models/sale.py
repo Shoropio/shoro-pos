@@ -23,6 +23,11 @@ class Sale(Base):
     discount_total: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0)
     tax_total: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0)
     total: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0)
+    total_crc: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0)
+    paid_total_crc: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0)
+    change_amount_crc: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0)
+    points_earned: Mapped[int] = mapped_column(Integer, default=0)
+    points_redeemed: Mapped[int] = mapped_column(Integer, default=0)
     ticket_text: Mapped[str | None] = mapped_column(String(4000))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
 

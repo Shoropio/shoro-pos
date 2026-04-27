@@ -41,10 +41,13 @@ def init_db() -> None:
     from app.models import (  # noqa: F401
         category,
         customer,
+        exchange_rate,
         fiscal_document,
         inventory,
+        offline_sale,
         payment,
         product,
+        promotion,
         sale,
         sale_item,
         settings,

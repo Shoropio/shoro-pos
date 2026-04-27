@@ -4,8 +4,14 @@ import qrcode
 import io
 import os
 from typing import Optional
+from zlib import crc32
 
 class BarcodeService:
+    @staticmethod
+    def generate_internal_barcode(seed: str) -> str:
+        numeric = str(crc32(seed.encode("utf-8")) % 10_000_000_000).zfill(10)
+        return f"74{numeric}"
+
     @staticmethod
     def generate_ean13(code: str) -> io.BytesIO:
         """

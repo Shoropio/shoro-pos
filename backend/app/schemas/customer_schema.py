@@ -11,6 +11,8 @@ class CustomerBase(BaseModel):
     phone: str | None = None
     address: str | None = None
     credit_limit: Decimal = 0
+    points_balance: int = 0
+    lifetime_points: int = 0
     is_active: bool = True
 
 
@@ -26,6 +28,7 @@ class CustomerUpdate(BaseModel):
     phone: str | None = None
     address: str | None = None
     credit_limit: Decimal | None = None
+    points_balance: int | None = None
     is_active: bool | None = None
 
 
