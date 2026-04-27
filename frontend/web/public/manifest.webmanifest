@@ -1,0 +1,16 @@
+{
+  "name": "Shoro POS",
+  "short_name": "Shoro POS",
+  "description": "Punto de venta profesional para Costa Rica",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#0d1117",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

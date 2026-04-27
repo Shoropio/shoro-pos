@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 let token = localStorage.getItem('token')
 
 export function setToken(value) {
@@ -13,6 +13,13 @@ export async function api(path, options = {}) {
     headers,
     body: options.body ? JSON.stringify(options.body) : undefined
   })
+  
+  if (response.status === 401) {
+    localStorage.removeItem('token')
+    window.location.reload()
+    return
+  }
+  
   if (!response.ok) throw new Error(await response.text())
   return response.json()
 }
