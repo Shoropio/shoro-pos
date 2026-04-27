@@ -43,6 +43,15 @@ def ensure_default_admin(db: Session) -> None:
                 role_id=roles[ROLE_ADMIN].id,
             )
         )
+    if db.scalar(select(User).where(User.email == "cajero@shoropos.local")) is None:
+        db.add(
+            User(
+                full_name="Cajero",
+                email="cajero@shoropos.local",
+                hashed_password=get_password_hash("cajero123"),
+                role_id=roles[ROLE_CASHIER].id,
+            )
+        )
     db.commit()
 
 

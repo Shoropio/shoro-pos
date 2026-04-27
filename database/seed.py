@@ -46,4 +46,4 @@ def run() -> None:
 
 if __name__ == "__main__":
     run()
-    print("Seed completado. Usuario: admin@shoropos.local / admin123")
+    print("Seed completado. Usuarios: admin@shoropos.local / admin123 | cajero@shoropos.local / cajero123")
