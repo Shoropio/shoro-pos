@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, File, status
 from fastapi.responses import StreamingResponse
+from openpyxl import Workbook
+from io import BytesIO
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -35,6 +37,24 @@ async def import_excel(file: UploadFile = File(...), db: Session = Depends(get_d
         return import_products_excel(db, content)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/import/template")
+def import_template(current_user=Depends(get_current_user)):
+    require_permission(current_user, "products.import")
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Productos"
+    sheet.append(["codigo", "codigo de barras", "sku", "nombre", "codigo cabys", "precio compra", "precio venta", "iva", "stock", "stock minimo"])
+    sheet.append(["P-0001", "744000000001", "SKU-001", "Producto ejemplo", "7316150100000", 500, 1000, 13, 25, 5])
+    buffer = BytesIO()
+    workbook.save(buffer)
+    buffer.seek(0)
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=plantilla_productos_shoro.xlsx"},
+    )
 
 
 @router.get("/{product_id}", response_model=ProductOut)

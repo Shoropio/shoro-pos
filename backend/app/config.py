@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     environment: str = "local"
     database_url: str = DEFAULT_DATABASE_URL
     secret_key: str = "dev-secret-change-me"
+    log_level: str = "INFO"
+    auto_create_tables: bool = True
     access_token_expire_minutes: int = 480
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
@@ -32,6 +34,8 @@ class Settings(BaseSettings):
     smtp_user: str | None = None
     smtp_password: str | None = None
     smtp_from: str | None = None
+    bccr_email: str | None = None
+    bccr_token: str | None = None
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

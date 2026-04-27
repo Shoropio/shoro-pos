@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.models.exchange_rate import ExchangeRate
 from app.models.settings import BusinessSettings
+from app.config import get_settings
 
 BCCR_ENDPOINT = "https://gee.bccr.fi.cr/Indicadores/Suscripciones/WS/wsindicadoreseconomicos.asmx/ObtenerIndicadoresEconomicosXML"
 USD_SELL_INDICATOR = "318"
@@ -65,10 +66,13 @@ def get_usd_crc_rate(db: Session, refresh: bool = False) -> dict:
 
     source = "fallback"
     buy_rate = sell_rate = Decimal(settings.fallback_usd_crc_rate or 520)
-    if settings.bccr_email and settings.bccr_token:
+    app_settings = get_settings()
+    bccr_email = settings.bccr_email or app_settings.bccr_email
+    bccr_token = settings.bccr_token or app_settings.bccr_token
+    if bccr_email and bccr_token:
         try:
-            buy_rate = fetch_bccr_indicator(USD_BUY_INDICATOR, settings.bccr_email, settings.bccr_token, date.today())
-            sell_rate = fetch_bccr_indicator(USD_SELL_INDICATOR, settings.bccr_email, settings.bccr_token, date.today())
+            buy_rate = fetch_bccr_indicator(USD_BUY_INDICATOR, bccr_email, bccr_token, date.today())
+            sell_rate = fetch_bccr_indicator(USD_SELL_INDICATOR, bccr_email, bccr_token, date.today())
             source = "bccr"
         except Exception:
             source = "fallback"

@@ -12,6 +12,7 @@ def ensure_default_admin(db: Session) -> None:
     defaults = {
         ROLE_ADMIN: {"all": True},
         ROLE_SUPERVISOR: {
+            "users.manage": True,
             "pos.apply_discount": True,
             "pos.apply_discount_50": True,
             "pos.remove_cart_item": True,

@@ -3,6 +3,7 @@ from decimal import Decimal
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
@@ -30,7 +31,7 @@ def get_current_shift(db: Session = Depends(get_db), current_user = Depends(get_
     
     # Recalcular totales actuales
     sales_data = db.execute(
-        select(Payment.method, func.sum(Payment.amount))
+        select(Payment.method, func.sum(Payment.amount_crc))
         .join(Sale)
         .where(Sale.created_at >= shift.opened_at, Sale.user_id == current_user.id)
         .group_by(Payment.method)
@@ -76,3 +77,31 @@ def close_shift(data: CloseShiftIn, db: Session = Depends(get_db), current_user 
     shift.notes = data.notes
     db.commit()
     return shift
+
+
+@router.get("/{shift_id}/print", response_class=HTMLResponse)
+def print_shift(shift_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    shift = db.get(CashShift, shift_id)
+    if shift is None or shift.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Turno no encontrado")
+    difference = (shift.closing_balance or 0) - (shift.expected_balance or 0)
+    return f"""
+    <!doctype html>
+    <html><head><meta charset='utf-8'><title>Cierre de caja</title>
+    <style>body{{font-family:Arial,sans-serif;max-width:360px;margin:24px auto;color:#111}}.row{{display:flex;justify-content:space-between;border-bottom:1px dashed #aaa;padding:6px 0}}@media print{{button{{display:none}}}}</style></head>
+    <body>
+      <h2>Shoro POS</h2>
+      <h3>Cierre de caja #{shift.id}</h3>
+      <div class='row'><span>Apertura</span><strong>{shift.opened_at}</strong></div>
+      <div class='row'><span>Cierre</span><strong>{shift.closed_at or ''}</strong></div>
+      <div class='row'><span>Fondo inicial</span><strong>{shift.opening_balance}</strong></div>
+      <div class='row'><span>Efectivo</span><strong>{shift.cash_sales}</strong></div>
+      <div class='row'><span>Tarjeta</span><strong>{shift.card_sales}</strong></div>
+      <div class='row'><span>SINPE</span><strong>{shift.sinpe_sales}</strong></div>
+      <div class='row'><span>Esperado</span><strong>{shift.expected_balance}</strong></div>
+      <div class='row'><span>Real</span><strong>{shift.closing_balance or ''}</strong></div>
+      <div class='row'><span>Diferencia</span><strong>{difference}</strong></div>
+      <p>{shift.notes or ''}</p>
+      <button onclick='window.print()'>Imprimir</button>
+    </body></html>
+    """

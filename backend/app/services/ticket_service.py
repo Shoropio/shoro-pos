@@ -62,7 +62,7 @@ class TicketService:
             <div>
                 <div>Factura: {{ sale.sale_number }}</div>
                 <div>Fecha: {{ sale.created_at.strftime('%d/%m/%Y %H:%M') }}</div>
-                <div>Cajero: {{ sale.user.name if sale.user else 'Admin' }}</div>
+                <div>Cajero: {{ sale.user.full_name if sale.user else 'Admin' }}</div>
                 {% if sale.customer %}
                 <div>Cliente: {{ sale.customer.name }}</div>
                 {% endif %}
@@ -111,8 +111,11 @@ class TicketService:
             <div>
                 <div class="bold">Método de Pago:</div>
                 {% for p in sale.payments %}
-                <div>{{ p.method|capitalize }}: {{ settings.main_currency }} {{ p.amount|round(2) }}</div>
+                <div>{{ p.method|capitalize }} {{ p.currency }}: {{ p.amount|round(2) }}</div>
                 {% endfor %}
+                {% if sale.change_amount_crc %}
+                <div>Cambio CRC: {{ sale.change_amount_crc|round(2) }}</div>
+                {% endif %}
             </div>
 
             <div class="divider"></div>
