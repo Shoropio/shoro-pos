@@ -34,7 +34,8 @@ def ensure_default_admin(db: Session) -> None:
             db.add(role)
             db.flush()
         roles[role_name] = role
-    if db.scalar(select(User).where(User.email == "admin@shoropos.local")) is None:
+    admin_user = db.scalar(select(User).where(User.email == "admin@shoropos.local"))
+    if admin_user is None:
         db.add(
             User(
                 full_name="Administrador",
@@ -43,7 +44,12 @@ def ensure_default_admin(db: Session) -> None:
                 role_id=roles[ROLE_ADMIN].id,
             )
         )
-    if db.scalar(select(User).where(User.email == "cajero@shoropos.local")) is None:
+    else:
+        admin_user.role_id = roles[ROLE_ADMIN].id
+        admin_user.is_active = True
+
+    cashier_user = db.scalar(select(User).where(User.email == "cajero@shoropos.local"))
+    if cashier_user is None:
         db.add(
             User(
                 full_name="Cajero",
@@ -52,6 +58,9 @@ def ensure_default_admin(db: Session) -> None:
                 role_id=roles[ROLE_CASHIER].id,
             )
         )
+    else:
+        cashier_user.role_id = roles[ROLE_CASHIER].id
+        cashier_user.is_active = True
     db.commit()
 
 

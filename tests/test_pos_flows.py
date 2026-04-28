@@ -9,6 +9,10 @@ def test_health_and_login(client):
     response = client.post("/auth/login", json={"email": "admin@shoropos.local", "password": "admin123"})
     assert response.status_code == 200
     assert response.json()["permissions"]["all"] is True
+    cashier = client.post("/auth/login", json={"email": "cajero@shoropos.local", "password": "cajero123"})
+    assert cashier.status_code == 200
+    assert cashier.json()["role"] == "cajero"
+    assert cashier.json()["permissions"]["sales.create"] is True
 
 
 def test_multicurrency_sale_with_promotion(client, auth_headers):

@@ -1,0 +1,19 @@
+@import './design-system.css';
+
+/* Global polish & utility classes */
+.login-shell { 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  height: 100vh; 
+}
+
+.brand-mark { 
+  display: inline-flex; 
+  align-items: center; 
+  justify-content: center; 
+  border-radius: var(--radius-md); 
+  background: var(--primary); 
+  color: #fff; 
+  font-weight: 700; 
+}
